@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+    <h1 class="main-title">
+        <span class="title-icon">📚</span>
+        Available Books
+        <span class="book-count">{{ books|length }} Books</span>
+    </h1>
+    {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+        <div class="admin-actions">
+            <a href="{{ url_for('add_book') }}" class="btn">
+                <span class="btn-icon">➕</span>
+                Add New Book
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="books-container">
+    {% if books %}
+        <div class="books-grid">
+            {% for b in books %}
+                <div class="book-card fade-in">
+                    <div class="book-header">
+                        <div class="book-title">{{ b.title }}</div>
+                        <div class="book-author">by {{ b.author }}</div>
+                    </div>
+                    
+                    <div class="book-meta">
+                        <div class="book-copies {{ 'book-available' if b.available_copies > 0 else 'book-unavailable' }}">
+                            <span class="copy-icon">📖</span>
+                            <span class="copy-text">{{ b.available_copies }}/{{ b.total_copies }}</span>
+                            <span class="copy-status">Available</span>
+                        </div>
+                        
+                        <div class="book-actions">
+                            {% if current_user.is_authenticated %}
+                                {% if borrows.get(b.id) %}
+                                    <form method="post" action="{{ url_for('return_book', book_id=b.id) }}" class="borrow-form">
+                                        <button type="submit" class="btn secondary" title="Return this book">
+                                            <span class="btn-icon">📤</span>
+                                            Return
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{{ url_for('borrow_book', book_id=b.id) }}" class="borrow-form">
+                                        <button type="submit" class="btn {% if b.available_copies <= 0 %}disabled{% endif %}" 
+                                                title="{% if b.available_copies > 0 %}Borrow this book{% else %}No copies available{% endif %}">
+                                            <span class="btn-icon">📖</span>
+                                            Borrow
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('login') }}" class="btn" title="Login to borrow books">
+                                    <span class="btn-icon">🔐</span>
+                                    Login to Borrow
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="book-footer">
+                        <div class="book-category">
+                            <span class="category-icon">📂</span>
+                            {% if b.category %}
+                                {{ b.category }}
+                            {% else %}
+                                General
+                            {% endif %}
+                        </div>
+                        
+                        {% if b.available_copies == 0 %}
+                            <div class="book-status unavailable">
+                                <span class="status-icon">⏰</span>
+                                Currently Unavailable
+                            </div>
+                        {% elif b.available_copies < 3 %}
+                            <div class="book-status limited">
+                                <span class="status-icon">⚠️</span>
+                                Limited Copies
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <div class="empty-title">No Books Available</div>
+            <div class="empty-description">
+                {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                    Start building your collection by adding your first book.
+                {% else %}
+                    Books will appear here once they're added to the library.
+                {% endif %}
+            </div>
+            {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                <a href="{{ url_for('add_book') }}" class="btn">
+                    <span class="btn-icon">➕</span>
+                    Add Your First Book
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .main-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0;
+    }
+    
+    .title-icon {
+        font-size: 2.5rem;
+    }
+    
+    .book-count {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .admin-actions {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .books-container {
+        margin-top: 2rem;
+    }
+    
+    .books-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        align-items: start;
+    }
+    
+    .book-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        transition: var(--transition);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .book-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
+        transition: var(--transition);
+    }
+    
+    .book-card:hover::before {
+        left: 100%;
+    }
+    
+    .book-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .book-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .book-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+    }
+    
+    .book-author {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        font-style: italic;
+    }
+    
+    .book-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+    }
+    
+    .book-copies {
+        background: var(--light-color);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .copy-icon {
+        font-size: 1rem;
+    }
+    
+    .copy-text {
+        color: var(--text-color);
+    }
+    
+    .copy-status {
+        font-size: 0.75rem;
+        margin-left: 0.25rem;
+    }
+    
+    .book-available .copy-status {
+        color: var(--success-color);
+    }
+    
+    .book-unavailable .copy-status {
+        color: var(--warning-color);
+    }
+    
+    .book-actions {
+        padding: 0 1.5rem;
+    }
+    
+    .borrow-form {
+        margin: 0;
+    }
+    
+    .book-footer {
+        margin-top: auto;
+        padding: 1rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .book-category {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .category-icon {
+        font-size: 1rem;
+    }
+    
+    .book-status {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .book-status.unavailable {
+        background: var(--danger-color);
+        color: white;
+    }
+    
+    .book-status.limited {
+        background: var(--warning-color);
+        color: white;
+    }
+    
+    .status-icon {
+        font-size: 1rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .empty-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+    
+    .empty-description {
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    @media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .books-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .book-card {
+            padding: 1rem;
+        }
+        
+        .book-title {
+            font-size: 1.125rem;
+        }
+        
+        .book-author {
+            font-size: 0.75rem;
+        }
+        
+        .book-meta {
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .book-footer {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .main-title {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+        
+        .book-count {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+        }
+        
+        .admin-actions {
+            justify-content: center;
+        }
+        
+        .books-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .book-card {
+            padding: 0.75rem;
+        }
+        
+        .book-title {
+            font-size: 1rem;
+        }
+        
+        .book-author {
+            font-size: 0.675rem;
+        }
+    }
+</style>
+{% endblock %}

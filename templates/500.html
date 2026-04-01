@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="error-container">
+    <div class="error-card fade-in">
+        <div class="error-icon">⚠️</div>
+        <h1 class="error-title">Server Error</h1>
+        <p class="error-message">
+            Something went wrong on our end. We're working to fix it!
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn primary-btn">
+                <span class="btn-icon">🏠</span>
+                Go Home
+            </a>
+            <button onclick="location.reload()" class="btn secondary-btn">
+                <span class="btn-icon">🔄</span>
+                Try Again
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+    
+    .error-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-lg);
+        padding: 3rem;
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+    }
+    
+    .error-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    .error-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+    }
+    
+    .error-message {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .primary-btn {
+        background: var(--primary-color);
+    }
+    
+    .secondary-btn {
+        background: var(--secondary-color);
+    }
+    
+    @media (max-width: 480px) {
+        .error-card {
+            padding: 2rem;
+        }
+        
+        .error-icon {
+            font-size: 3rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+        }
+        
+        .error-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
